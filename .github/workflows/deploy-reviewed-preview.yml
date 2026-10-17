@@ -29,7 +29,8 @@ jobs:
           set -euo pipefail
           test -s incoming-preview/index.html
           test -s incoming-preview/manifest.webmanifest
-          test -s incoming-preview/assets/index-pJcFsdqp.js && exit 1 || true
+          find incoming-preview -maxdepth 3 -type f -print
+          test -s incoming-preview/assets/index-pJcFsdqp.js && { echo "Unexpected stale bundle"; exit 1; } || true
           grep -q '/habit-tracker-preview/assets/' incoming-preview/index.html
           test -f incoming-preview/icons/icon-192.png
           test -f incoming-preview/icons/icon-512.png

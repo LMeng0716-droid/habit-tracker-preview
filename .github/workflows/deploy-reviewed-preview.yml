@@ -18,11 +18,11 @@ jobs:
       - name: Download approved public-source build artifact
         uses: actions/download-artifact@v4
         with:
-          name: habit-tracker-preview-82cf8525f32a114a26a82a462b11bd6ad6245221
+          name: habit-tracker-preview-3274c2ec49ae3e4a26e2426e73a2592e61afe96f
           path: incoming-preview
           github-token: ${{ github.token }}
           repository: LMeng0716-droid/habit-tracker
-          run-id: 39038441315
+          run-id: 39135279981
       - name: Validate and install static preview
         shell: bash
         run: |
@@ -30,7 +30,8 @@ jobs:
           test -s incoming-preview/index.html
           test -s incoming-preview/manifest.webmanifest
           find incoming-preview -maxdepth 3 -type f -print
-          test -s incoming-preview/assets/index-pJcFsdqp.js
+          test -n "$(find incoming-preview/assets -maxdepth 1 -type f -name '*.js' -print -quit)"
+          test -n "$(find incoming-preview/assets -maxdepth 1 -type f -name '*.css' -print -quit)"
           grep -q '/habit-tracker-preview/assets/' incoming-preview/index.html
           test -f incoming-preview/icons/icon-192.png
           test -f incoming-preview/icons/icon-512.png
@@ -47,6 +48,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html manifest.webmanifest assets icons
           if ! git diff --cached --quiet; then
-            git commit -m "deploy: reviewed preview build 82cf852"
+            git commit -m "deploy: reviewed preview build 3274c2e"
             git push origin HEAD:main
           fi

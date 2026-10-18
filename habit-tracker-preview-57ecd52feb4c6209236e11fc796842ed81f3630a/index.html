@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#23634e" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="每日进步" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="description" content="每日进步：简单、私密的中文习惯打卡工具" />
+    <title>每日进步 · 把小事坚持下去</title>
+    <script type="module" crossorigin src="/habit-tracker-preview/assets/index-B_Wsn1f3.js"></script>
+    <link rel="stylesheet" crossorigin href="/habit-tracker-preview/assets/index-yQtVPewz.css">
+    <link rel="manifest" href="/habit-tracker-preview/manifest.webmanifest">
+    <link rel="apple-touch-icon" sizes="180x180" href="/habit-tracker-preview/icons/apple-touch-icon.png?v=sprout-2">
+    <link rel="icon" type="image/svg+xml" href="/habit-tracker-preview/icons/source.svg?v=sprout-2">
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>每日进步需要启用 JavaScript，并联网读取云端记录。</noscript>
+    <section id="startup-error" hidden role="alert">
+      <h1>每日进步暂时未能加载</h1>
+      <p>
+        请检查网络。若刚更新过应用，请联网重新加载；你的云端记录不会因此删除。
+      </p>
+      <button id="reload-app" type="button">联网重新加载</button>
+    </section>
+    <script>
+      (() => {
+        const show = () => {
+          if (!document.getElementById("root").children.length)
+            document.getElementById("startup-error").hidden = false;
+        };
+        window.addEventListener(
+          "error",
+          (event) => {
+            if (
+              event.target === window ||
+              (event.target instanceof HTMLScriptElement &&
+                event.target.type === "module")
+            )
+              show();
+          },
+          true,
+        );
+        const observer = new MutationObserver(() => {
+          if (document.getElementById("root").children.length) {
+            document.getElementById("startup-error").hidden = true;
+            observer.disconnect();
+          }
+        });
+        observer.observe(document.getElementById("root"), { childList: true });
+        setTimeout(show, 15000);
+        document.getElementById("reload-app").addEventListener("click", () => {
+          const url = new URL(location.href);
+          url.searchParams.set("_refresh", Date.now().toString());
+          location.replace(url.href);
+        });
+      })();
+    </script>
+  </body>
+</html>

@@ -18,11 +18,11 @@ jobs:
       - name: Download approved public-source build artifact
         uses: actions/download-artifact@v4
         with:
-          name: habit-tracker-preview-da2b5a3cd59fed83eaa3faa9d2cf5698305ed467
+          name: habit-tracker-preview-da82d3917a565014067ca85350826090684be7d9
           path: incoming-preview
           github-token: ${{ github.token }}
           repository: LMeng0716-droid/habit-tracker
-          run-id: 40155863022
+          run-id: 40157768584
       - name: Validate and install static preview
         shell: bash
         run: |
@@ -48,6 +48,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html manifest.webmanifest assets icons
           if ! git diff --cached --quiet; then
-            git commit -m "deploy: reviewed mobile streak display build da2b5a3"
+            git commit -m "deploy: reviewed mobile management preview da82d39"
             git push origin HEAD:main
           fi

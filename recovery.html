@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f5f8fc">
+<title>习惯打卡 · 本地数据恢复检查</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#172b4d;background:#f5f8fc}
+body{margin:0;padding:24px 16px calc(32px + env(safe-area-inset-bottom));max-width:720px;margin-inline:auto}
+h1{font-size:23px;margin:8px 0}p{line-height:1.6;color:#52647d}.card{background:white;border:1px solid #dce5f0;border-radius:16px;padding:18px;margin:16px 0}
+button{border:0;border-radius:12px;padding:13px 16px;font-size:16px;font-weight:600;background:#164b86;color:white;width:100%;margin-top:10px}
+button.secondary{background:#e8eff7;color:#164b86}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f1f5f9;border-radius:10px;padding:12px;font-size:12px}
+small{color:#65758b}.status{font-weight:650}.ok{color:#18794e}.warn{color:#986500}
+</style>
+</head>
+<body>
+<h1>本地数据恢复检查</h1>
+<p>此页面与习惯打卡预览 App 使用同一个网站域名，可检查该域名下的浏览器本地存储。</p>
+<div class="card">
+<strong>安全说明</strong>
+<p>本页只读取本地存储，不会删除、修改或上传任何数据；不会读取或导出登录令牌、密码及其他认证凭据。建议在原来安装主屏幕 App 的 iPhone 上，通过 Safari 打开本页面。</p>
+</div>
+<div class="card">
+<div id="status" class="status">正在检查……</div>
+<p id="summary"></p>
+<div id="details"></div>
+<button id="export" disabled>导出发现的计时数据备份（JSON）</button>
+<button class="secondary" id="refresh">重新检查</button>
+</div>
+<div class="card">
+<strong>重要提示</strong>
+<p>如果没有发现计时数据，不代表所有历史时长都已永久丢失。已成功提交的记录应继续从原云端数据库及历史备份中追查。请不要因此清理网站数据或重新安装 App。</p>
+<small>本工具只检查当前浏览器配置文件、当前网站来源下可访问的数据。</small>
+</div>
+<script>
+(() => {
+  const prefix = "habit-tracker:numeric-timer:v1:";
+  const status = document.getElementById("status");
+  const summary = document.getElementById("summary");
+  const details = document.getElementById("details");
+  const exportButton = document.getElementById("export");
+  let backup = [];
+  function inspect() {
+    backup = [];
+    const matches = [];
+    const candidates = [];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+        if (key.startsWith(prefix)) {
+          const raw = localStorage.getItem(key);
+          if (raw === null) continue;
+          let parsed;
+          let valid = false;
+          try {
+            parsed = JSON.parse(raw);
+            valid = !!parsed && typeof parsed.id === "string" &&
+              Number.isFinite(parsed.start) && parsed.start > 0;
+          } catch (_) {}
+          const entry = {
+            key,
+            value: parsed && valid ? parsed : null,
+            rawLength: raw.length,
+            valid,
+            pendingSegments: valid && Array.isArray(parsed.pending) ? parsed.pending.length : 0
+          };
+          matches.push(entry);
+          if (valid) backup.push({ key, value: parsed });
+        } else if (/(timer|numeric|progress|habit)/i.test(key)) {
+          candidates.push(key);
+        }
+      }
+      status.textContent = matches.length
+        ? "发现 " + matches.length + " 个计时存储项"
+        : "没有发现已知格式的计时存储项";
+      status.className = "status " + (backup.length ? "ok" : "warn");
+      summary.textContent = "其中 " + backup.length + " 个项目通过格式检查；候选相关存储键 " + candidates.length + " 个。";
+      details.innerHTML = "";
+      if (matches.length) {
+        const pre = document.createElement("pre");
+        pre.textContent = matches.map(x =>
+          x.key + "\n格式有效：" + (x.valid ? "是" : "否") +
+          "；数据长度：" + x.rawLength +
+          "；待提交分段：" + x.pendingSegments
+        ).join("\n\n");
+        details.appendChild(pre);
+      }
+      if (candidates.length) {
+        const label = document.createElement("p");
+        label.textContent = "其他可能相关的存储键（仅显示名称，不读取内容）：";
+        details.appendChild(label);
+        const pre = document.createElement("pre");
+        pre.textContent = candidates.join("\n");
+        details.appendChild(pre);
+      }
+      if (!matches.length && !candidates.length) {
+        const p = document.createElement("p");
+        p.textContent = "当前网站来源下没有发现名称相关的本地存储键。";
+        details.appendChild(p);
+      }
+      exportButton.disabled = backup.length === 0;
+    } catch (error) {
+      status.textContent = "检查失败：" + String(error);
+      status.className = "status warn";
+      exportButton.disabled = true;
+    }
+  }
+  exportButton.addEventListener("click", () => {
+    if (!backup.length) return;
+    const payload = {
+      format: "habit-tracker-local-timer-backup-v1",
+      exportedAt: new Date().toISOString(),
+      source: location.origin,
+      entries: backup
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "habit-tracker-timer-backup.json";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+  document.getElementById("refresh").addEventListener("click", inspect);
+  inspect();
+})();
+</script>
+</body>
+</html>

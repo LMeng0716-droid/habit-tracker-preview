@@ -1,0 +1,49 @@
+name: Deploy isolated V3 sandbox preview
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/deploy-v3-sandbox-auto.yml
+permissions:
+  contents: write
+  actions: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Download exact V3 sandbox build
+        uses: actions/download-artifact@v4
+        with:
+          name: habit-tracker-preview-1a258d062b20374ef1753a02a5dc462681d56871
+          path: incoming-preview
+          github-token: ${{ github.token }}
+          repository: LMeng0716-droid/habit-tracker
+          run-id: 40999433277
+      - name: Validate and install preview artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s incoming-preview/index.html
+          test -s incoming-preview/manifest.webmanifest
+          test -n "$(find incoming-preview/assets -maxdepth 1 -type f -name '*.js' -print -quit)"
+          test -n "$(find incoming-preview/assets -maxdepth 1 -type f -name '*.css' -print -quit)"
+          grep -q '/habit-tracker-preview/assets/' incoming-preview/index.html
+          test -f incoming-preview/icons/icon-192.png
+          test -f incoming-preview/icons/icon-512.png
+          test -f incoming-preview/icons/apple-touch-icon.png
+          mkdir -p assets icons
+          cp incoming-preview/index.html incoming-preview/manifest.webmanifest ./
+          cp -R incoming-preview/assets/. assets/
+          cp -R incoming-preview/icons/. icons/
+      - name: Publish sandbox-only preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html manifest.webmanifest assets icons
+          git commit -m "deploy: isolated V3 sandbox preview 1a258d0"
+          git push origin HEAD:main

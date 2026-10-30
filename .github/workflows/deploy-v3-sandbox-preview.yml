@@ -1,0 +1,72 @@
+name: Deploy V3 sandbox preview artifact
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Successful build run ID from LMeng0716-droid/habit-tracker
+        required: true
+        type: string
+      artifact_name:
+        description: Exact artifact name habit-tracker-preview-<commit-sha>
+        required: true
+        type: string
+      expected_commit:
+        description: Full 40-character source commit SHA
+        required: true
+        type: string
+permissions:
+  contents: write
+  actions: read
+jobs:
+  deploy-v3-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Validate source identity
+        shell: bash
+        env:
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+          ARTIFACT_NAME: ${{ inputs.artifact_name }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_RUN_ID" =~ ^[0-9]+$ ]]
+          [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$ARTIFACT_NAME" == "habit-tracker-preview-$EXPECTED_COMMIT" ]]
+      - name: Download exact approved build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: incoming-preview
+          github-token: ${{ github.token }}
+          repository: LMeng0716-droid/habit-tracker
+          run-id: ${{ inputs.source_run_id }}
+      - name: Validate and install static preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s incoming-preview/index.html
+          test -s incoming-preview/manifest.webmanifest
+          test -n "$(find incoming-preview/assets -maxdepth 1 -type f -name '*.js' -print -quit)"
+          test -n "$(find incoming-preview/assets -maxdepth 1 -type f -name '*.css' -print -quit)"
+          grep -q '/habit-tracker-preview/assets/' incoming-preview/index.html
+          test -f incoming-preview/icons/icon-192.png
+          test -f incoming-preview/icons/icon-512.png
+          test -f incoming-preview/icons/apple-touch-icon.png
+          mkdir -p assets icons
+          cp incoming-preview/index.html incoming-preview/manifest.webmanifest ./
+          cp -R incoming-preview/assets/. assets/
+          cp -R incoming-preview/icons/. icons/
+      - name: Commit preview site only
+        shell: bash
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html manifest.webmanifest assets icons
+          git commit -m "deploy: V3 sandbox preview $EXPECTED_COMMIT"
+          git push origin HEAD:main

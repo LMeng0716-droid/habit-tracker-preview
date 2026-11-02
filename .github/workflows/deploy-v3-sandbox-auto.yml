@@ -17,11 +17,11 @@ jobs:
       - name: Download exact V3 sandbox build
         uses: actions/download-artifact@v4
         with:
-          name: habit-tracker-preview-1a258d062b20374ef1753a02a5dc462681d56871
+          name: habit-tracker-preview-38604e754c18f485e85c77096ddbcfca2573cf8e
           path: incoming-preview
           github-token: ${{ github.token }}
           repository: LMeng0716-droid/habit-tracker
-          run-id: 40999433277
+          run-id: 41384067870
       - name: Validate and install preview artifact
         shell: bash
         run: |
@@ -45,5 +45,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html manifest.webmanifest assets icons
-          git commit -m "deploy: isolated V3 sandbox preview 1a258d0"
+          git commit -m "deploy: isolated V3 sandbox preview 38604e7"
           git push origin HEAD:main
